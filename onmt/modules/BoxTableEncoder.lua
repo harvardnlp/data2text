@@ -97,8 +97,7 @@ function BoxTableEncoder:_buildModel()
     for i = 1, args.effectiveDecLayers do
         local lin = nn.Linear(args.nRows*args.encDim, args.decDim)
         table.insert(self.transforms, lin)
-        table.insert(outputs,
-          args.tanhOutput and nn.Tanh()(lin(flattenedByRows)) or lin(flattenedByRows))
+        table.insert(outputs, lin(flattenedByRows))
     end
 
     table.insert(outputs, ctx)

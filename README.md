@@ -23,7 +23,30 @@ This pointer information can be incorporated into the preprocessing by running:
 th box_preprocess.lua -json_data_dir ~/Documents/code/boxscore-data/rotowire -save_data roto -ptr_fi "roto-ptrs.txt"
 ```
 
-The file roto-ptrs.txt has been included in the repo, but you can also generate one with
+The file roto-ptrs.txt has been included in the repo.
+
+
+## Training (and Downloading Trained Models)
+The command for training the Joint Copy + Rec + TVD model is as follows:
+
+```
+th box_train.lua -data roto-train.t7 -save_model roto_jc_rec_tvd -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 50 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -discrec -rho 1 -partition_feats -recembsize 600 -discdist 1
+```
+
+A model trained in this way can be downloaded from  https://drive.google.com/file/d/0B1ytQXPDuw7ONlZOQ2R3UWxmZ2s/view?usp=sharing
+
+
+The command for training the Conditional Copy model is as follows:
+
+```
+th box_train.lua -data roto-train.t7 -save_model roto_cc -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 100 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -switch -multilabel
+```
+
+A model trained in this way can be downloaded from https://drive.google.com/file/d/0B1ytQXPDuw7OaHZJZjVWd2N6R2M/view?usp=sharing
+
+
+## Misc/Utils
+You can regenerate a pointer file with
 
 ```
 python data_utils.py -mode ptrs -input_fi ~/Documents/code/boxscore-data/rotowire/train.json -output_fi "my-roto-ptrs.txt"
