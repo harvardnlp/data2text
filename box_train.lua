@@ -415,10 +415,6 @@ local function trainModel(model, trainData, validData, dataset, info)
     local bestPpl = math.huge
     local bestEpoch = -1
 
-    if not opt.json_log then
-        print('Start training...')
-    end
-
     if opt.just_gen then
         beamGen(model, validData, g_tgtDict)
         return
@@ -426,6 +422,10 @@ local function trainModel(model, trainData, validData, dataset, info)
         validPpl = eval(model, criterion, validData)
             print('Validation perplexity: ' .. validPpl)
         return
+    end
+
+    if not opt.json_log then
+        print('Start training...')
     end
 
     for epoch = opt.start_epoch, opt.epochs do
@@ -481,15 +481,12 @@ local function main()
   local dataset = torch.load(opt.data, 'binary', false)
 
   assert(dataset.dicts.src.words:size() == dataset.dicts.tgt.words:size())
-  -- add extra shit for all the column features
+  -- add extra for all the column features
   --Hacky Constants
-  --g_nRegRows = 13
   g_nRegRows = #dataset.train.src.words/2 - 1 -- two teams and nRegRows players
   assert(g_nRegRows == 13)
-  --g_nCols = 22 -- note this disregards first bs_key, which is like the row i guess
-  g_nCols = dataset.train.src.words[1][1]:size(1) - 1 -- leave off first b/c it's like the row name
+  g_nCols = dataset.train.src.words[1][1]:size(1) - 1 -- leave off first b/c it's the row name
   assert(g_nCols == 22)
-  --g_specPadding = 22 --want to take the last thing now which is the team name (not in first place anymore)--7
   g_specPadding = g_nCols -- assume last real column is the row name for special (i.e., team) rows
   g_nFeatures = 4
 
@@ -519,7 +516,7 @@ local function main()
     colStartIdx, g_nFeatures, opt.copy_generate, nil, tripV, opt.switch, opt.multilabel)
   local validData
   if opt.test then
-    print("chest")
+    print("using test data...")
     validData = onmt.data.BoxDataset2.new(dataset.test.src, dataset.test.tgt,
       colStartIdx, g_nFeatures, opt.copy_generate, nil, tripV)
   else

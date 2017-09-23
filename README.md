@@ -44,6 +44,18 @@ th box_train.lua -data roto-train.t7 -save_model roto_cc -rnn_size 600 -word_vec
 
 A model trained in this way can be downloaded from https://drive.google.com/file/d/0B1ytQXPDuw7OaHZJZjVWd2N6R2M/view?usp=sharing
 
+## Generation
+Use the following commands to generate from the above models:
+
+```
+th box_train.lua -data roto-train.t7 -save_model roto_jc_rec_tvd -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 50 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -discrec -rho 1 -partition_feats -recembsize 600 -discdist 1 -train_from roto_jc_rec_tvd_epoch45_7.22.t7 -just_gen -beam_size 5 -gen_file roto_jc_rec_tvd-beam5_gens.txt
+```
+
+```
+th box_train.lua -data roto-train.t7 -save_model roto_cc -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 100 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -switch -multilabel -train_from roto_cc_epoch34_7.44.t7 -just_gen -beam_size 5 -gen_file roto_cc-beam5_gens.txt
+ ```
+
+The beam size used in generation can be adjusted with the `-beam_size` argument. You can generate on the test data by supplying the `-test` flag.
 
 ## Misc/Utils
 You can regenerate a pointer file with
