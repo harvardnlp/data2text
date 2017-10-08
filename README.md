@@ -61,5 +61,43 @@ The beam size used in generation can be adjusted with the `-beam_size` argument.
 You can regenerate a pointer file with
 
 ```
-python data_utils.py -mode ptrs -input_fi ~/Documents/code/boxscore-data/rotowire/train.json -output_fi "my-roto-ptrs.txt"
+python data_utils.py -mode ptrs -input_path ~/Documents/code/boxscore-data/rotowire/train.json -output_fi "my-roto-ptrs.txt"
+```
+
+## Information/Relation Extraction
+
+### Creating Training/Validation Data
+You can create a dataset for training or evaluating the relation extraction system as follows:
+
+```
+python data_utils.py -mode make_ie_data -input_path "../boxscore-data/rotowire" -output_fi "roto-ie.h5"
+```
+
+This will create files `roto-ie.h5`, `roto-ie.dict`, and `roto-ie.labels`.
+
+### Evaluating Generated summaries
+1. You can download the extraction models we ensemble to do the evaluation from this [link](https://drive.google.com/drive/u/1/folders/0B1ytQXPDuw7OdjBCUW50S2VIdDQ). There are six models in total, with the name pattern `*ie-ep*.t7`. Put these extraction models in the same directory as `extractor.lua`. (Note that `extractor.lua` hard-codes the paths to these saved models, so you'll need to change this if you want to substitute in new models.)
+
+2. Once you've generated summaries, you can put them into a format the extraction system can consume as follows:
+
+```
+python data_utils.py -mode prep_gen_data -gen_fi roto_cc-beam5_gens.txt -dict_pfx "roto-ie" -output_fi roto_cc-beam5_gens.h5 -input_path "../boxscore-data/rotowire"
+```
+
+where the file you've generated is called `roto_cc-beam5_gens.txt` and the dictionary and labels files are in `roto-ie.dict` and `roto-ie.labels` respectively (as above). This will create a file called `roto_cc-beam5_gens.h5`, which can be consumed by the extraction system.
+
+3. The extraction system can then be run as follows:
+
+```
+th extractor.lua -gpuid 1 -datafile roto-ie.h5 -preddata roto_cc-beam5_gens.h5 -dict_pfx "roto-ie" -just_eval
+```
+
+This will print out the **RG** metric numbers. (For the recall number, divide the 'nodup correct' number by the total number of generated summaries, e.g., 727). It will also generate a file called `roto_cc-beam5_gens.h5-tuples.txt`, which contains the extracted relations, which can be compared to the gold extracted relations.
+
+4. We now need the tuples from the gold summaries. `roto-gold-val.h5-tuples.txt` and `roto-gold-test.h5-tuples.txt` have been included in the repo, but they can be recreated by repeating steps 2 and 3 using the gold summaries (with one gold summary per-line, as usual).
+
+5. The remaining metrics can now be obtained by running:
+
+```
+python non_rg_metrics.py roto-gold-val.h5-tuples.txt roto_cc-beam5_gens.h5-tuples.txt
 ```

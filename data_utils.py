@@ -1,4 +1,4 @@
-import sys, codecs, json
+import sys, codecs, json, os
 from collections import Counter, defaultdict
 from nltk import sent_tokenize, word_tokenize
 import numpy as np
@@ -247,17 +247,18 @@ def append_candidate_rels(entry, summ, all_ents, prons, players, teams, cities, 
             candrels.append((tokes, rels))
     return candrels
 
-def get_datasets(inp_file="full_newnba_prepdata2.json"):
+def get_datasets(path="../boxscore-data/rotowire"):
 
-    with codecs.open(inp_file, "r", "utf-8") as f:
-        data = json.load(f)
+    with codecs.open(os.path.join(path, "train.json"), "r", "utf-8") as f:
+        trdata = json.load(f)
 
-    all_ents, players, teams, cities = get_ents(data["train"])
+    all_ents, players, teams, cities = get_ents(trdata)
+
+    with codecs.open(os.path.join(path, "valid.json"), "r", "utf-8") as f:
+        valdata = json.load(f)
 
     extracted_stuff = []
-    datasets = [data["train"], data["valid"]]
-    if "test" in data:
-        datasets.append(data["test"])
+    datasets = [trdata, valdata]
     for dataset in datasets:
         nugz = []
         for i, entry in enumerate(dataset):
@@ -265,7 +266,7 @@ def get_datasets(inp_file="full_newnba_prepdata2.json"):
             append_candidate_rels(entry, summ, all_ents, prons, players, teams, cities, nugz)
 
         extracted_stuff.append(nugz)
-    del data
+
     del all_ents
     del players
     del teams
@@ -327,8 +328,8 @@ def append_labelnums(labels):
         labellist.append(labelnums[i])
 
 # for full sentence IE training
-def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
-    datasets = get_datasets(inp_file)
+def save_full_sent_data(outfile, path="../boxscore-data/rotowire", multilabel_train=False, nonedenom=0):
+    datasets = get_datasets(path)
     # make vocab and get labels
     word_counter = Counter()
     [word_counter.update(tup[0]) for tup in datasets[0]]
@@ -344,7 +345,7 @@ def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
     # save stuff
     trsents, trlens, trentdists, trnumdists, trlabels = [], [], [], [], []
     valsents, vallens, valentdists, valnumdists, vallabels = [], [], [], [], []
-    testsents, testlens, testentdists, testnumdists, testlabels = [], [], [], [], []
+    #testsents, testlens, testentdists, testnumdists, testlabels = [], [], [], [], []
 
     max_trlen = max((len(tup[0]) for tup in datasets[0]))
     print "max tr sentence length:", max_trlen
@@ -378,9 +379,6 @@ def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
 
     print len(trsents), "training examples"
 
-    # could really get rid of NONE-labeled val and test things too, since theoretically
-    # our classifer wouldn't even need to operate on these.if aything makes things harder i would think...
-
     # do val, which we also consider multilabel
     max_vallen = max((len(tup[0]) for tup in datasets[1]))
     for tup in datasets[1]:
@@ -392,16 +390,16 @@ def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
     print len(valsents), "validation examples"
 
 
-    if len(datasets) > 2:
-        # do test, which we also consider multilabel
-        max_testlen = max((len(tup[0]) for tup in datasets[2]))
-        for tup in datasets[2]:
-            #append_to_data(tup, valsents, vallens, valentdists, valnumdists, vallabels, vocab, labeldict, max_len)
-            append_multilabeled_data(tup, testsents, testlens, testentdists, testnumdists, testlabels, vocab, labeldict, max_testlen)
-
-        append_labelnums(testlabels)
-
-        print len(testsents), "test examples"
+    # if len(datasets) > 2:
+    #     # do test, which we also consider multilabel
+    #     max_testlen = max((len(tup[0]) for tup in datasets[2]))
+    #     for tup in datasets[2]:
+    #         #append_to_data(tup, valsents, vallens, valentdists, valnumdists, vallabels, vocab, labeldict, max_len)
+    #         append_multilabeled_data(tup, testsents, testlens, testentdists, testnumdists, testlabels, vocab, labeldict, max_testlen)
+    #
+    #     append_labelnums(testlabels)
+    #
+    #     print len(testsents), "test examples"
 
     h5fi = h5py.File(outfile, "w")
     h5fi["trsents"] = np.array(trsents, dtype=int)
@@ -416,16 +414,16 @@ def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
     h5fi["vallabels"] = np.array(vallabels, dtype=int)
     h5fi.close()
 
-    if len(datasets) > 2:
-        h5fi = h5py.File("test-" + outfile, "w")
-        h5fi["testsents"] = np.array(testsents, dtype=int)
-        h5fi["testlens"] = np.array(testlens, dtype=int)
-        h5fi["testentdists"] = np.array(testentdists, dtype=int)
-        h5fi["testnumdists"] = np.array(testnumdists, dtype=int)
-        h5fi["testlabels"] = np.array(testlabels, dtype=int)
-        h5fi.close()
-    #h5fi["vallabelnums"] = np.array(vallabelnums, dtype=int)
-    #h5fi.close()
+    # if len(datasets) > 2:
+    #     h5fi = h5py.File("test-" + outfile, "w")
+    #     h5fi["testsents"] = np.array(testsents, dtype=int)
+    #     h5fi["testlens"] = np.array(testlens, dtype=int)
+    #     h5fi["testentdists"] = np.array(testentdists, dtype=int)
+    #     h5fi["testnumdists"] = np.array(testnumdists, dtype=int)
+    #     h5fi["testlabels"] = np.array(testlabels, dtype=int)
+    #     h5fi.close()
+    ## h5fi["vallabelnums"] = np.array(vallabelnums, dtype=int)
+    ## h5fi.close()
 
     # write dicts
     revvocab = dict(((v,k) for k,v in vocab.iteritems()))
@@ -439,8 +437,7 @@ def save_full_sent_data(outfile, inp_file, multilabel_train=False, nonedenom=0):
             f.write("%s %d \n" % (revlabels[i], i))
 
 
-# for full sentences
-def prep_generated_data(genfile, dict_pfx, outfile, inp_file="full_newnba_prepdata2.json", start_after=13):
+def prep_generated_data(genfile, dict_pfx, outfile, path="../boxscore-data/rotowire", test=False):
     # recreate vocab and labeldict
     vocab = {}
     with codecs.open(dict_pfx+".dict", "r", "utf-8") as f:
@@ -454,28 +451,26 @@ def prep_generated_data(genfile, dict_pfx, outfile, inp_file="full_newnba_prepda
             pieces = line.strip().split()
             labeldict[pieces[0]] = int(pieces[1])
 
-    # need to extract entities from generated poop
     with codecs.open(genfile, "r", "utf-8") as f:
         gens = f.readlines()
-        gens = gens[start_after:]
 
-    with codecs.open(inp_file, "r", "utf-8") as f:
-        data = json.load(f)
+    with codecs.open(os.path.join(path, "train.json"), "r", "utf-8") as f:
+        trdata = json.load(f)
 
-    all_ents, players, teams, cities = get_ents(data["train"])
+    all_ents, players, teams, cities = get_ents(trdata)
 
-    assert len(data["valid"]) == len(gens)
+    valfi = "test.json" if test else "valid.json"
+    with codecs.open(os.path.join(path, valfi), "r", "utf-8") as f:
+        valdata = json.load(f)
+
+    assert len(valdata) == len(gens)
 
     nugz = [] # to hold (sentence_tokens, [rels]) tuples
     sent_reset_indices = {0} # sentence indices where a box/story is reset
-    for i, entry in enumerate(data["valid"]):
+    for i, entry in enumerate(valdata):
         summ = gens[i]
-        #sents_before = len(nugz)
         append_candidate_rels(entry, summ, all_ents, prons, players, teams, cities, nugz)
-        #sents_after = len(nugz)
-        #sents_from_summ = sents_after - sents_before
         sent_reset_indices.add(len(nugz))
-
 
     # save stuff
     max_len = max((len(tup[0]) for tup in nugz))
@@ -499,10 +494,7 @@ def prep_generated_data(genfile, dict_pfx, outfile, inp_file="full_newnba_prepda
     h5fi["valnumdists"] = np.array(pnumdists, dtype=int)
     h5fi["vallabels"] = np.array(plabels, dtype=int)
     h5fi["boxrestartidxs"] = np.array(np.array(rel_reset_indices)+1, dtype=int) # 1-indexed
-    #h5fi["vallabelnums"] = np.array(vallabelnums, dtype=int)
     h5fi.close()
-
-
 
 ################################################################################
 
@@ -836,15 +828,25 @@ def save_coref_task_data(outfile, inp_file="full_newnba_prepdata2.json"):
 
 
 parser = argparse.ArgumentParser(description='Utility Functions')
-parser.add_argument('-input_fi', type=str, default="",
-                    help="path to input file")
+parser.add_argument('-input_path', type=str, default="",
+                    help="path to input")
 parser.add_argument('-output_fi', type=str, default="",
                     help="desired path to output file")
+parser.add_argument('-gen_fi', type=str, default="",
+                    help="path to file containing generated summaries")
+parser.add_argument('-dict_pfx', type=str, default="roto-ie",
+                    help="prefix of .dict and .labels files")
 parser.add_argument('-mode', type=str, default='ptrs',
-                    choices=['ptrs'],
+                    choices=['ptrs', 'make_ie_data', 'prep_gen_data'],
                     help="what utility function to run")
+parser.add_argument('-test', action='store_true', help='use test data')
 
 args = parser.parse_args()
 
 if args.mode == 'ptrs':
-    make_pointerfi(args.output_fi, inp_file=args.input_fi)
+    make_pointerfi(args.output_fi, inp_file=args.input_path)
+elif args.mode == 'make_ie_data':
+    save_full_sent_data(args.output_fi, path=args.input_path, multilabel_train=True)
+elif args.mode == 'prep_gen_data':
+    prep_generated_data(args.gen_fi, args.dict_pfx, args.output_fi, path=args.input_path,
+                        test=args.test)
