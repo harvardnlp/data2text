@@ -568,9 +568,9 @@ function main()
 
     local model
     if opt.lstm then
-        model = make_model2(V_sizes, emb_sizes, nlabels, opt):cuda()
+        model = make_blstm_model(V_sizes, emb_sizes, nlabels, opt):cuda()
     else
-        model = make_model(V_sizes, emb_sizes, nlabels, opt):cuda()
+        model = make_conv_model(V_sizes, emb_sizes, nlabels, opt):cuda()
     end
     local crit = nn.MarginalNLLCriterion():cuda()
     local params, grads = model:getParameters()
