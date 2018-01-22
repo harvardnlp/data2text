@@ -39,7 +39,7 @@ A model trained in this way can be downloaded from  https://drive.google.com/fil
 The command for training the Conditional Copy model is as follows:
 
 ```
-th box_train.lua -data roto-train.t7 -save_model roto_cc -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 100 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -switch -multilabel
+th box_train.lua -data roto-train.t7 -save_model roto_cc -rnn_size 600 -word_vec_size 600 -enc_emb_size 600 -max_batch_size 16 -dropout 0.5 -feat_merge concat -pool mean -enc_layers 1 -enc_relu -report_every 50 -gpuid 1 -epochs 100 -learning_rate 1 -enc_dropout 0 -decay_update2 -layers 2 -copy_generate -tanh_query -max_bptt 100 -switch -multilabel -seed 0
 ```
 
 A model trained in this way can be downloaded from https://drive.google.com/file/d/0B1ytQXPDuw7OaHZJZjVWd2N6R2M/view?usp=sharing

@@ -239,7 +239,8 @@ def append_candidate_rels(entry, summ, all_ents, prons, players, teams, cities, 
     """
     sents = sent_tokenize(summ)
     for j, sent in enumerate(sents):
-        tokes = word_tokenize(sent)
+        #tokes = word_tokenize(sent)
+        tokes = sent.split()
         ents = extract_entities(tokes, all_ents, prons)
         nums = extract_numbers(tokes)
         rels = get_rels(entry, ents, nums, players, teams, cities)

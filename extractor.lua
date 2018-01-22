@@ -68,7 +68,9 @@ function prep_data(batchsize)
 
     -- need to shift negative distances...
     min_entdist = math.min(trentdists:min(), valentdists:min())
+    if pentdists then pentdists:clamp(min_entdist, trentdists:max()) end
     min_numdist = math.min(trnumdists:min(), valnumdists:min())
+    if pentdists then pnumdists:clamp(min_numdist, trnumdists:max()) end
     trentdists:add(-min_entdist+1)
     valentdists:add(-min_entdist+1)
     if pentdists then
