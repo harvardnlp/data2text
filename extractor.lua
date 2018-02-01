@@ -30,6 +30,7 @@ cmd:option('-ignore_idx', 11, [[idx of NONE class in *.labels file]])
 cmd:option('-just_eval', false, [[just eval generations]])
 cmd:option('-lstm', false, [[use a BLSTM rather than a convolutional model]])
 cmd:option('-geom', false, [[average models geometrically]])
+cmd:option('-test', false, [[use test data]])
 
 local opt = cmd:parse(arg)
 
@@ -43,13 +44,24 @@ function prep_data(batchsize)
     local trentdists = f:read("trentdists"):all():index(1, perm)
     local trnumdists = f:read("trnumdists"):all():index(1, perm)
 
-    local valsents = f:read("valsents"):all()
-    local vallens = f:read("vallens"):all()
-    local valentdists = f:read("valentdists"):all()
-    local valnumdists = f:read("valnumdists"):all()
-    local vallabels = f:read("vallabels"):all() -- these are 2d
-    local vallabelnums = vallabels:select(2, vallabels:size(2))
-    vallabels = vallabels:narrow(2, 1, vallabels:size(2)-1):contiguous()
+    local valsents, vallens, valentdists, valnumdists, vallabels, vallabelnums
+    if opt.test then
+      valsents = f:read("testsents"):all()
+      vallens = f:read("testlens"):all()
+      valentdists = f:read("testentdists"):all()
+      valnumdists = f:read("testnumdists"):all()
+      vallabels = f:read("testlabels"):all() -- these are 2d
+      vallabelnums = vallabels:select(2, vallabels:size(2))
+      vallabels = vallabels:narrow(2, 1, vallabels:size(2)-1):contiguous()
+    else
+      valsents = f:read("valsents"):all()
+      vallens = f:read("vallens"):all()
+      valentdists = f:read("valentdists"):all()
+      valnumdists = f:read("valnumdists"):all()
+      vallabels = f:read("vallabels"):all() -- these are 2d
+      vallabelnums = vallabels:select(2, vallabels:size(2))
+      vallabels = vallabels:narrow(2, 1, vallabels:size(2)-1):contiguous()
+    end
     f:close()
 
     local psents, plens, pentdists, pnumdists, plabels, pboxrestartidxs
@@ -322,10 +334,11 @@ function get_multilabel_acc(model, valbatches, ignoreIdx, convens, lstmens)
         g_maxes:resize(sent:size(1), 1)
         g_argmaxes:resize(sent:size(1), 1)
         torch.max(g_maxes, g_argmaxes, preds, 2)
-	      pred5s = pred5s + g_argmaxes:eq(5):sum()
-	      true5s = true5s + labels:eq(5):sum()
-	      nonnolabel = nonnolabel + labels:select(2,1):ne(ignoreIdx):sum()
-        g_one_hot:resize(sent:size(1), labels:size(2)):zero()
+        --pred5s = pred5s + g_argmaxes:eq(5):sum()
+	--true5s = true5s + labels:eq(5):sum()
+	nonnolabel = nonnolabel + labels:select(2,1):ne(ignoreIdx):sum()
+        --g_one_hot:resize(sent:size(1), labels:size(2)):zero()
+	g_one_hot:resize(sent:size(1), preds:size(2)):zero()
         local numpreds = 0
         local in_denominator = g_argmaxes
         for k = 1, sent:size(1) do
@@ -334,7 +347,6 @@ function get_multilabel_acc(model, valbatches, ignoreIdx, convens, lstmens)
                 numpreds = numpreds + 1
             end
         end
-	--print("ey", g_one_hot:select(2,5):sum())
         g_correct_buf:resize(sent:size(1), 1):zero()
         g_correct_buf:gather(g_one_hot, 2, g_argmaxes)
         correct = correct + g_correct_buf:sum()
@@ -342,7 +354,6 @@ function get_multilabel_acc(model, valbatches, ignoreIdx, convens, lstmens)
         ignored = ignored + sent:size(1) - numpreds
     end
     local acc = correct/total
-    print("pred5s", pred5s, "true5s", true5s)
     local rec = correct/nonnolabel
     print("rec", rec)
     print("ignored", ignored/(ignored+total))
@@ -493,7 +504,6 @@ function eval_gens(predbatches, ignoreIdx, boxrestartidxs, convens, lstmens)
           if seen[predkey] then
               ndupcorrects = ndupcorrects + 1
           end
-        else
         end
         if seen[predkey] then
             nduptotal = nduptotal + 1
@@ -516,12 +526,22 @@ end
 
 
 function set_up_saved_models()
+ --[[
   local convens_paths = {"convie-ep9-1.t7",
                          "convie-ep9-2.t7",
-                         "convie-ep8-3.t7"}
+			 "convie-ep8-3.t7"}
+
   local lstmens_paths = {"blstmie-ep7-1.t7",
-                         "blstmie-ep7-2.t7",
-                         "blstmie-ep10-3.t7"}
+	                 "blstmie-ep7-2.t7",
+			 "blstmie-ep10-3.t7"}
+  --]]
+  local convens_paths = {"conv1ie-ep6-94-74.t7",
+                         "conv2ie-ep3-94-60.t7",
+			 "conv3ie-ep8-95-72.t7"}
+
+  local lstmens_paths = {"blst1mie-ep4-93-75.t7",
+	                 "blstm2ie-ep3-93-71.t7",
+			 "blstm3ie-ep2-94-72.t7"}  
   opt.embed_size = 200
   opt.num_filters = 200
   opt.conv_fc_layer_size = 500
@@ -614,16 +634,16 @@ function main()
 
             params:add(-opt.lr, grads)
 
-	          model:get(1):get(1).weight[word_pad]:zero()
-	          model:get(1):get(2).weight[ent_dist_pad]:zero()
-	          model:get(1):get(3).weight[num_dist_pad]:zero()
+	    model:get(1):get(1).weight[word_pad]:zero()
+	    model:get(1):get(2).weight[ent_dist_pad]:zero()
+	    model:get(1):get(3).weight[num_dist_pad]:zero()
         end
         print("train loss:", loss/#trbatches)
 
         local acc, rec = get_multilabel_acc(model, valbatches, opt.ignore_idx)
         print("acc:", acc)
 
-	      local savefi = string.format("ep%d-%d-%d-%s", i, math.floor(100*acc), math.floor(100*rec), opt.savefile)
+	local savefi = string.format("%s-ep%d-%d-%d", opt.savefile, i, math.floor(100*acc), math.floor(100*rec))
         print("saving to", savefi)
         torch.save(savefi, params)
         print("")

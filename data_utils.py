@@ -258,8 +258,11 @@ def get_datasets(path="../boxscore-data/rotowire"):
     with codecs.open(os.path.join(path, "valid.json"), "r", "utf-8") as f:
         valdata = json.load(f)
 
+    with codecs.open(os.path.join(path, "valid.json"), "r", "utf-8") as f:
+        testdata = json.load(f)
+        
     extracted_stuff = []
-    datasets = [trdata, valdata]
+    datasets = [trdata, valdata, testdata]
     for dataset in datasets:
         nugz = []
         for i, entry in enumerate(dataset):
@@ -346,7 +349,7 @@ def save_full_sent_data(outfile, path="../boxscore-data/rotowire", multilabel_tr
     # save stuff
     trsents, trlens, trentdists, trnumdists, trlabels = [], [], [], [], []
     valsents, vallens, valentdists, valnumdists, vallabels = [], [], [], [], []
-    #testsents, testlens, testentdists, testnumdists, testlabels = [], [], [], [], []
+    testsents, testlens, testentdists, testnumdists, testlabels = [], [], [], [], []
 
     max_trlen = max((len(tup[0]) for tup in datasets[0]))
     print "max tr sentence length:", max_trlen
@@ -390,17 +393,15 @@ def save_full_sent_data(outfile, path="../boxscore-data/rotowire", multilabel_tr
 
     print len(valsents), "validation examples"
 
+    # do test, which we also consider multilabel
+    max_testlen = max((len(tup[0]) for tup in datasets[2]))
+    for tup in datasets[2]:
+        #append_to_data(tup, valsents, vallens, valentdists, valnumdists, vallabels, vocab, labeldict, max_len)
+        append_multilabeled_data(tup, testsents, testlens, testentdists, testnumdists, testlabels, vocab, labeldict, max_testlen)
 
-    # if len(datasets) > 2:
-    #     # do test, which we also consider multilabel
-    #     max_testlen = max((len(tup[0]) for tup in datasets[2]))
-    #     for tup in datasets[2]:
-    #         #append_to_data(tup, valsents, vallens, valentdists, valnumdists, vallabels, vocab, labeldict, max_len)
-    #         append_multilabeled_data(tup, testsents, testlens, testentdists, testnumdists, testlabels, vocab, labeldict, max_testlen)
-    #
-    #     append_labelnums(testlabels)
-    #
-    #     print len(testsents), "test examples"
+    append_labelnums(testlabels)
+
+    print len(testsents), "test examples"
 
     h5fi = h5py.File(outfile, "w")
     h5fi["trsents"] = np.array(trsents, dtype=int)
@@ -413,16 +414,15 @@ def save_full_sent_data(outfile, path="../boxscore-data/rotowire", multilabel_tr
     h5fi["valentdists"] = np.array(valentdists, dtype=int)
     h5fi["valnumdists"] = np.array(valnumdists, dtype=int)
     h5fi["vallabels"] = np.array(vallabels, dtype=int)
-    h5fi.close()
+    #h5fi.close()
 
-    # if len(datasets) > 2:
-    #     h5fi = h5py.File("test-" + outfile, "w")
-    #     h5fi["testsents"] = np.array(testsents, dtype=int)
-    #     h5fi["testlens"] = np.array(testlens, dtype=int)
-    #     h5fi["testentdists"] = np.array(testentdists, dtype=int)
-    #     h5fi["testnumdists"] = np.array(testnumdists, dtype=int)
-    #     h5fi["testlabels"] = np.array(testlabels, dtype=int)
-    #     h5fi.close()
+    #h5fi = h5py.File("test-" + outfile, "w")
+    h5fi["testsents"] = np.array(testsents, dtype=int)
+    h5fi["testlens"] = np.array(testlens, dtype=int)
+    h5fi["testentdists"] = np.array(testentdists, dtype=int)
+    h5fi["testnumdists"] = np.array(testnumdists, dtype=int)
+    h5fi["testlabels"] = np.array(testlabels, dtype=int)
+    h5fi.close()
     ## h5fi["vallabelnums"] = np.array(vallabelnums, dtype=int)
     ## h5fi.close()
 
@@ -641,7 +641,7 @@ def make_pointerfi(outfi, inp_file="rotowire/train.json", resolve_prons=False):
                                 src_idx = (2*NUM_PLAYERS+2)*(len(bs_keys)-1) -2 # second to last thing
                             if src_idx is not None:
                                 targ_idx = words_so_far + ent_start + k
-                                if entry["summary"][targ_idx] != word:
+                                if targ_idx >= len(entry["summary"]) or entry["summary"][targ_idx] != word:
                                     targ_idx = fix_target_idx(entry["summary"], targ_idx, word)
                                 #print word, rulsrcs[i][src_idx], entry["summary"][words_so_far + ent_start + k]
                                 if targ_idx is None:

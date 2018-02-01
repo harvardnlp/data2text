@@ -87,18 +87,25 @@ def calc_precrec(goldfi, predfi):
 
 def norm_dld(l1, l2):
     ascii_start = 0
-    assert len(l1) + len(l2) <= 128
     # make a string for l1
     # all triples are unique...
     s1 = ''.join((chr(ascii_start+i) for i in xrange(len(l1))))
     s2 = ''
+    next_char = ascii_start + len(s1)
     for j in xrange(len(l2)):
-        next_char = chr(ascii_start+len(s1)+j)
+        found = None
+        #next_char = chr(ascii_start+len(s1)+j)
         for k in xrange(len(l1)):
             if trip_match(l2[j], l1[k]):
-                next_char = s1[k]
+                found = s1[k]
+                #next_char = s1[k]
                 break
-        s2 += next_char
+        if found is None:
+            s2 += chr(next_char)
+            next_char += 1
+            assert next_char <= 128
+        else:
+            s2 += found
     # return 1- , since this thing gives 0 to perfect matches etc
     return 1.0-normalized_damerau_levenshtein_distance(s1, s2)
 
