@@ -539,7 +539,7 @@ function set_up_saved_models()
                          "conv2ie-ep3-94-60.t7",
 			 "conv3ie-ep8-95-72.t7"}
 
-  local lstmens_paths = {"blst1mie-ep4-93-75.t7",
+  local lstmens_paths = {"blstm1ie-ep4-93-75.t7",
 	                 "blstm2ie-ep3-93-71.t7",
 			 "blstm3ie-ep2-94-72.t7"}  
   opt.embed_size = 200
