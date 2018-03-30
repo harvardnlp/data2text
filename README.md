@@ -109,6 +109,22 @@ This will print out the **RG** metric numbers. (For the recall number, divide th
 python non_rg_metrics.py roto-gold-val.h5-tuples.txt roto_cc-beam5_gens.h5-tuples.txt
 ```
 
+### Retraining the Extraction Model
+I trained the convolutional IE model as follows:
+
+```
+th extractor.lua -gpuid 1 -datafile roto-ie.h5 -lr 0.7 -embed_size 200 -blstm_fc_layer_size 500 -dropout 0.5 -savefile roto-convie
+```
+
+I trained the BLSTM IE model as follows:
+
+```
+th extractor.lua -gpuid 1 -datafile roto-ie.h5 -lstm -lr 1 -embed_size 200 -blstm_fc_layer_size 700 -dropout 0.5 -savefile roto-blstmie -seed 1111
+```
+
+The saved models linked to above were obtained by varying the seed or the epoch.
+
+
 ### Updated Results
 
 On the development set:
