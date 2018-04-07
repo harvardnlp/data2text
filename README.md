@@ -113,7 +113,7 @@ python non_rg_metrics.py roto-gold-val.h5-tuples.txt roto_cc-beam5_gens.h5-tuple
 I trained the convolutional IE model as follows:
 
 ```
-th extractor.lua -gpuid 1 -datafile roto-ie.h5 -lr 0.7 -embed_size 200 -blstm_fc_layer_size 500 -dropout 0.5 -savefile roto-convie
+th extractor.lua -gpuid 1 -datafile roto-ie.h5 -lr 0.7 -embed_size 200 -conv_fc_layer_size 500 -dropout 0.5 -savefile roto-convie
 ```
 
 I trained the BLSTM IE model as follows:
